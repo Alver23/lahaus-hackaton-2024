@@ -55,8 +55,10 @@ La API ofrece un endpoint para buscar lugares cercanos basado en coordenadas y o
 
 
 **Endpoint:** /nearby-search
+
 **Método:** POST
-Descripción: Devuelve una lista de lugares cercanos a las coordenadas proporcionadas y aplicando los filtros especificados.
+
+**Descripción:** Devuelve una lista de lugares cercanos a las coordenadas proporcionadas y aplicando los filtros especificados.
 
 
 ### Parámetros de Consulta
