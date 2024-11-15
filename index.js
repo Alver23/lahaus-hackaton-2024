@@ -4,8 +4,6 @@ const bodyParser = require('body-parser');
 const axios = require('axios');
 const GooglePlacesService = require('./GooglePlaces');
 
-console.log('GooglePlacesService', GooglePlacesService)
-
 const app = express();
 app.use(bodyParser.json());
 
