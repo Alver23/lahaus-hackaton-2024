@@ -2,13 +2,16 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
+const GooglePlacesService = require('./GooglePlaces');
+
+console.log('GooglePlacesService', GooglePlacesService)
 
 const app = express();
 app.use(bodyParser.json());
 
 // Ruta POST para búsqueda cercana
 app.post('/nearby-search', async (req, res) => {
-    const { location, radius, type, keyword, rows = 5 } = req.body;
+    const { location, radius, type, keyword, rows = 5, fields } = req.body;
 
     // Validar los parámetros requeridos
     if (!location || !radius) {
@@ -19,32 +22,21 @@ app.post('/nearby-search', async (req, res) => {
 
     try {
         const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-        const baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+        const googlePlacesService = new GooglePlacesService(apiKey)
 
-        // Construir la URL de búsqueda
-        const url = new URL(baseUrl);
-        url.searchParams.append('location', location);
-        url.searchParams.append('radius', radius);
-        if (type) url.searchParams.append('type', type); // Tipo de lugar
-        if (keyword) url.searchParams.append('keyword', keyword); // Palabra clave
-        url.searchParams.append('key', apiKey);
-
-        // Realizar la solicitud a Google Places API
-        const path = url.toString()
-        console.log('path', path)
-        const response = await axios.get(url.toString());
-        const data = response.data;
-
-        const places = data.results
-        // Selecciona los tres primeros lugares con mejor rating
+        const params = {
+            location, radius, type, keyword
+        }
+        const places = await googlePlacesService.getNearbyPlaces(params);
         const topPlaces = places
             .slice(0, rows);
 
 
         const placeDetails = await Promise.all(topPlaces.map(async (place) => {
-            const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&key=${apiKey}`;
-            const detailsResponse = await axios.get(detailsUrl);
-            const { reviews, ...details} = detailsResponse.data.result;
+            const details = await googlePlacesService.getPlaceDetails({
+                placeId: place.place_id,
+                fields: fields
+            });
 
             const destination = `${place.geometry.location.lat},${place.geometry.location.lng}`;
 
