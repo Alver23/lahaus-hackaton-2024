@@ -9,12 +9,12 @@ app.use(bodyParser.json());
 
 // Ruta POST para búsqueda cercana
 app.post('/nearby-search', async (req, res) => {
-    const { location, radius, type, keyword, rows = 5, fields } = req.body;
+    const { location, radius, type, keyword, rows = 5, fields, rankby = 'prominence' } = req.body;
 
     // Validar los parámetros requeridos
-    if (!location || !radius) {
+    if (!location) {
         return res.status(400).json({
-            error: "Los parámetros 'location' y 'radius' son obligatorios. Ejemplo: { location: '37.7749,-122.4194', radius: 1500 }"
+            error: "Los parámetros 'location' son obligatorios. Ejemplo: { location: '37.7749,-122.4194' }"
         });
     }
 
@@ -23,7 +23,7 @@ app.post('/nearby-search', async (req, res) => {
         const googlePlacesService = new GooglePlacesService(apiKey)
 
         const params = {
-            location, radius, type, keyword
+            location, radius, type, keyword, rankby
         }
         const places = await googlePlacesService.getNearbyPlaces(params);
         const topPlaces = places
@@ -64,8 +64,9 @@ app.post('/nearby-search', async (req, res) => {
             data: placeDetails
         });
     } catch (error) {
-        console.error('Error al realizar la búsqueda:', error);
-        res.status(500).json({ error: 'Ocurrió un error interno' });
+        const errorMessage = error.message ?? 'Ocurrió un error interno';
+        const stackTrace = error.stack;
+        res.status(500).json({ error: { message: errorMessage, stackTrace } });
     }
 });
 

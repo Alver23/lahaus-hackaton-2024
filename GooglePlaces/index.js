@@ -6,15 +6,25 @@ class GooglePlaces {
     }
 
     async getNearbyPlaces(params) {
-        const { location, radius, type, keyword } = params;
+        const { location, radius, type, keyword, rankby } = params;
         const baseUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
 
         // Construir la URL de búsqueda
         const url = new URL(baseUrl);
         url.searchParams.append('location', location);
-        url.searchParams.append('radius', radius);
+
+        if (!radius && rankby === 'prominence') {
+            throw new Error('El parámetro "radius" es necesario cuando "rankby" es "prominence"');
+        }
+
+        if (radius && rankby === 'distance') {
+            throw new Error('El parámetro radius no es permitido cuando "rankby" es "distance"');
+        }
+
+        if (radius) url.searchParams.append('radius', radius); // Radio de búsqueda
         if (type) url.searchParams.append('type', type); // Tipo de lugar
         if (keyword) url.searchParams.append('keyword', keyword); // Palabra clave
+        if (rankby) url.searchParams.append('rankby', rankby); // Order para el resultado de la consulta "prominence|distance"
 
         url.searchParams.append('key', this.apiKey);
 
