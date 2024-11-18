@@ -35,7 +35,8 @@ Instala las dependencias:
 npm install
 ```
 
-** Ejecución de la Aplicación**
+**Ejecución de la Aplicación**
+
 Usando Node.js
 Para iniciar el servicio usando Node.js:
 
@@ -68,6 +69,14 @@ La API ofrece un endpoint para buscar lugares cercanos basado en coordenadas y o
 - **keyword (opcional):** Palabra clave para filtrar los resultados por nombre o descripción.
 - **rows (opcional):** Cantidad de lugares a devolver (por defecto es 5).
 - **fields (opcional):** Campos que se quieren devolver en la respuesta (por ejemplo, name, rating, price_level).
+- **rankby (opcional):** Define cómo se ordenan los resultados de búsqueda.
+  Admite los siguientes valores:
+
+  - **prominence (por defecto):** Ordena los resultados por relevancia dentro del radio especificado.
+  Nota: Este valor requiere que también se especifique el parámetro **radius**.
+  - **distance:** Ordena los resultados por proximidad desde la ubicación proporcionada.
+  Nota: Este valor requiere incluir al menos uno de los siguientes parámetros: keyword, **name o type**, y no es compatible con el parámetro radius.
+
 
 
 ### Ejemplo de Solicitud
@@ -82,7 +91,8 @@ POST http://localhost:3000/nearby-search
   "radius": 150,
   "rows": 1,
   "fields": "name,rating,price_level",
-  "type": "restaurant"
+  "type": "restaurant",
+  "rankby": "prominence|distance"
 }
 ```
 
