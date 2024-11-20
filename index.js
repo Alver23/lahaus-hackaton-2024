@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const GooglePlacesService = require('./GooglePlaces');
+const GooglePlacesConnector = require('./GooglePlaces/v2');
 
 const app = express();
 app.use(bodyParser.json());
@@ -67,6 +68,41 @@ app.post('/nearby-search', async (req, res) => {
         const errorMessage = error.message ?? 'Ocurrió un error interno';
         const stackTrace = error.stack;
         res.status(500).json({ error: { message: errorMessage, stackTrace } });
+    }
+});
+
+app.post('/v2/nearby-search', async (req, res) => {
+    try {
+        const { location, radius, includedTypes, includedPrimaryTypes, excludedTypes, excludedPrimaryTypes, maxResultCount = 5, fields = 'places.id,places.name', rankPreference = 'POPULARITY' } = req.body;
+
+        if (!location || !radius || !fields) {
+            return res.status(400).json({
+                error: "Los parámetros 'location, radius, fields' son obligatorios. Ejemplo: { location: '37.7749,-122.4194', fields: 'places.id,places.name', radius: 150 }"
+            });
+        }
+
+        const [latitude, longitude] = location.split(',');
+        const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+        const googlePlacesConnector = new GooglePlacesConnector(apiKey);
+        const { places } = await googlePlacesConnector.getPlacesList({
+            fields,
+            radius,
+            location: { latitude, longitude },
+            maxResultCount,
+            rankPreference,
+            includedTypes, includedPrimaryTypes, excludedTypes, excludedPrimaryTypes
+        });
+
+        res.json({
+            message: "Lugares cercanos destacados",
+            data: places
+        });
+    } catch (error) {
+        const statusCode = error.response?.status ?? 500;
+        const errorData = error.response?.data ?? {};
+        const errorMessage = error.message ?? 'Ocurrió un error interno';
+        const stackTrace = error.stack;
+        res.status(statusCode).json({ error: { message: errorMessage, stackTrace, data: errorData } });
     }
 });
 
