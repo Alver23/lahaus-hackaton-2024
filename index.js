@@ -73,7 +73,7 @@ app.post('/nearby-search', async (req, res) => {
 
 app.post('/v2/nearby-search', async (req, res) => {
     try {
-        const { location, radius, includedTypes, includedPrimaryTypes, excludedTypes, excludedPrimaryTypes, maxResultCount = 5, fields = 'places.id,places.name', rankPreference = 'POPULARITY' } = req.body;
+        const { location, radius, includedTypes, includedPrimaryTypes, excludedTypes, excludedPrimaryTypes, maxResultCount = 5, fields, rankPreference = 'POPULARITY' } = req.body;
 
         if (!location || !radius || !fields) {
             return res.status(400).json({
@@ -85,7 +85,7 @@ app.post('/v2/nearby-search', async (req, res) => {
         const apiKey = process.env.GOOGLE_PLACES_API_KEY;
         const googlePlacesConnector = new GooglePlacesConnector(apiKey);
         const { places } = await googlePlacesConnector.getPlacesList({
-            fields,
+            fields: 'places.id,places.location',
             radius,
             location: { latitude, longitude },
             maxResultCount,
@@ -93,9 +93,36 @@ app.post('/v2/nearby-search', async (req, res) => {
             includedTypes, includedPrimaryTypes, excludedTypes, excludedPrimaryTypes
         });
 
+        const placeDetails = await Promise.all(places.map(async (place) => {
+            const details = await googlePlacesConnector.getPlaceDetails({
+                fields,
+                placeId: place.id
+            });
+
+            const destination = `${place.location.latitude},${place.location.longitude}`;
+
+
+            // Realiza la solicitud a Distance Matrix API para tiempo caminando
+            const walkingUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${location}&destinations=${destination}&mode=walking&key=${apiKey}`;
+            const walkingResponse = await axios.get(walkingUrl);
+            const walkingData = walkingResponse.data.rows[0].elements[0];
+
+            // Realiza la solicitud a Distance Matrix API para tiempo conduciendo
+            const drivingUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${location}&destinations=${destination}&mode=driving&key=${apiKey}`;
+            const drivingResponse = await axios.get(drivingUrl);
+            const drivingData = drivingResponse.data.rows[0].elements[0];
+
+            return {
+                ...details,
+                distance_text: walkingData.distance.text, // Distancia desde el punto de origen
+                walking_time: walkingData.duration.text,  // Tiempo caminando
+                driving_time: drivingData.duration.text   // Tiempo conduciendo
+            };
+        }));
+
         res.json({
             message: "Lugares cercanos destacados",
-            data: places
+            data: placeDetails
         });
     } catch (error) {
         const statusCode = error.response?.status ?? 500;
