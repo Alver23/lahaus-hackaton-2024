@@ -32,6 +32,16 @@ class PlacesConnector {
         return axios.post(requestUrl, requestPayload, { headers: requestHeaders })
             .then(response => response.data);
     }
+
+    async getPlaceDetails(params) {
+        const { placeId, fields } = params;
+
+        const requestUrl = `${this.baseUrl}/${placeId}`
+        const requestHeaders = {...this.defaultHeaders, 'X-Goog-FieldMask': fields }
+        const requestPayload = { languageCode: this.languageCode, regionCode: this.regionCode }
+        return axios.get(requestUrl, { params: requestPayload, headers: requestHeaders })
+            .then(response => response.data);
+    }
 }
 
 module.exports = PlacesConnector;
